@@ -14,13 +14,13 @@ import (
 )
 
 var metadataRegexp = regexp.MustCompile(`metadata\/.*\.yml$`)
-var supportedTiles = []string{"p-isolation-segment", "p-windows-runtime", "pas-windows"}
+var supportedTiles = []string{"p-isolation-segment", "p-windows-runtime", "pas-windows", "pivotal-mysql"}
 
 const (
 	istRouterJobType  = "isolated_router"
 	istCellJobType    = "isolated_diego_cell"
 	istHAProxyJobType = "isolated_ha_proxy"
-
+	dedicatedMySqlBroker = "dedicated-mysql-broker"
 	wrtCellJobType = "windows_diego_cell"
 )
 
@@ -117,6 +117,8 @@ func (t TileReplicator) Replicate(config ApplicationConfig) error {
 				finalContents = t.replaceWRTProperties(string(contentsYaml), t.formatName(config))
 			} else if tileName == "pas-windows" {
 				finalContents = t.replaceWRTProperties(string(contentsYaml), t.formatName(config))
+			} else if tileName == "pivotal-mysql" {
+				finalContents = t.replaceMYSQLProperties(string(contentsYaml), t.formatName(config))
 			}
 
 			_, err = dstFile.Write([]byte(finalContents))
@@ -157,6 +159,12 @@ func (TileReplicator) replaceWRTProperties(metadata string, name string) string 
 	return strings.Replace(metadata, "windows_diego_cell", newDiegoCellName, -1)
 }
 
+func (TileReplicator) replaceMYSQLProperties(metadata string, name string) string {
+	newBrokerName := fmt.Sprintf("%s_%s", dedicatedMySqlBroker, name)
+
+	return strings.Replace(metadata, "dedicated-mysql-broker", newBrokerName, -1)
+}
+
 func (TileReplicator) replaceName(originalName string, config ApplicationConfig) (string, error) {
 
 	re := regexp.MustCompile("[-_ ]")
@@ -174,3 +182,4 @@ func (TileReplicator) replaceName(originalName string, config ApplicationConfig)
 func (TileReplicator) replaceLabel(originalLabel string, config ApplicationConfig) string {
 	return fmt.Sprintf("%s (%s)", originalLabel, config.Name)
 }
+
